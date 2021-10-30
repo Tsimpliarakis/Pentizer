@@ -5,6 +5,7 @@ Pentizer is a personal project that imports Kali and Parrot repositories in any 
 Adding other distro's repos is not the recomended way of getting the tools you need, but it's a fast and easy method, made faster and easier with Pentizer.
 
 - Installation -
+
 Run the pentizer.py file with root privileges and python3.
 e.g. "sudo python3 pentizer.py"
 
