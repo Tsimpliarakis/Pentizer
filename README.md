@@ -13,3 +13,5 @@ e.g. "sudo python3 pentizer.py"
 
 I'm not responsible for any broken systems. Use at your own risk.
 Feel free to fork and help me improve the project.
+
+DO NOT UPGRADE YOUR SYSTEM WITH THE KALI/PARROT REPOSITORIES ON. IT WILL BREAK YOUR SYSTEM.
