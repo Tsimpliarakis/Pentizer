@@ -28,6 +28,10 @@ def detect():
     if parrot in open('/etc/apt/sources.list').read():
         print ('Parrot repositories are already on your system')
 
+def repo_clean():
+    os.system("sed -i '/deb http://http.kali.org/kali kali-rolling main non-free contrib/d' /etc/apt/sources.list")
+    os.system("sed -i '/deb https://deb.parrotsec.org/parrot parrot main contrib non-free/d' /etc/apt/sources.list")
+
 def main():
     choice = int(input('--> '))
     if choice == 1:
