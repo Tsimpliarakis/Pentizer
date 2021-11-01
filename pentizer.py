@@ -6,7 +6,7 @@ import os
 import urllib.request
 
 def welcome():
-    print('\n - - - Converting your boring distro into a hacking powerhouse - - - \n')
+    print('\n - - - Converting any Debian based distro into a hacking powerhouse - - - \n')
 
 def goodbye():
     print("\nDon't forget to perform 'sudo apt update'")
@@ -18,6 +18,7 @@ def menu():
     print('| 0. Clean repositories and Exit |')
     print('| 1. Add Kali Linux repositories |')
     print('| 2. Add Parrot Os repositories  |')
+    print('| 3. Add BackBox repositories    |')
     print('|                                |')
     print('==================================\n')
 
@@ -36,6 +37,7 @@ def clean():
     os.system("sudo sed -i '/backbox/d' /etc/apt/sources.list")
     os.system("sudo rm -f /etc/apt/trusted.gpg.d/kali-archive-key.asc")
     os.system("sudo rm -f /etc/apt/trusted.gpg.d/parrotsec.gpg")
+    os.system("sudo rm -f /etc/apt/sources.list.d/backbox.list")
 
 def main():
     choice = int(input('--> '))
@@ -61,8 +63,7 @@ def main():
             #os.system('sudo apt-key add /etc/apt/trusted.gpg.d/parrotsec.gpg')
     elif choice == 3:
         with open('/etc/apt/sources.list', 'a') as f:
-            f.write('deb http://ppa.launchpad.net/backbox/seven/ubuntu focal main\n')
-            f.write('deb-src http://ppa.launchpad.net/backbox/seven/ubuntu focal main\n')
+            os.system('sudo add-apt-repository ppa:backbox/seven\n')
     else:
         print('\nInvalid option\nExiting...\n')
         clean()
