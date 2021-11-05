@@ -1,5 +1,5 @@
 # Pentizer
-Transform your boring distro into a hacking powerhouse.
+Transform any Debian based distro into a hacking powerhouse.
 
 Pentizer is a personal project that imports Kali and Parrot repositories in any Debian based distribution.
 Adding other distro's repos is not the recomended way of getting the tools you need, but it's a fast and easy method, made faster and easier with Pentizer.
