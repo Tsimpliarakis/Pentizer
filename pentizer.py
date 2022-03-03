@@ -51,16 +51,12 @@ def main():
             f.write('deb-src http://http.kali.org/kali kali-rolling main non-free contrib\n')
             fullfilename = os.path.join('/etc/apt/trusted.gpg.d', 'kali-archive-key.asc')
             urllib.request.urlretrieve('https://archive.kali.org/archive-key.asc', filename=fullfilename)
-            #os.system('sudo apt-key add /etc/apt/trusted.gpg.d/kali-archive-key.asc')
     elif choice == 2:
         with open('/etc/apt/sources.list', 'a') as f:
             f.write('deb https://deb.parrotsec.org/parrot parrot main contrib non-free\n')
             f.write('deb https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
             f.write('deb-src https://deb.parrotsec.org/parrot parrot main contrib non-free\n')
             f.write('deb-src https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
-            #fullfilename = os.path.join('/etc/apt/trusted.gpg.d', 'parrotsec.gpg')
-            #urllib.request.urlretrieve('https://archive.parrotsec.org/parrot/misc/parrotsec.gpg', filename=fullfilename)
-            #os.system('sudo apt-key add /etc/apt/trusted.gpg.d/parrotsec.gpg')
     elif choice == 3:
         with open('/etc/apt/sources.list', 'a') as f:
             os.system('sudo add-apt-repository ppa:backbox/seven\n')
