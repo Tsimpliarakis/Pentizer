@@ -9,7 +9,9 @@ def welcome():
     print('\n - - - Converting any Debian based distro into a hacking powerhouse - - - \n')
 
 def goodbye():
-    print("\nDon't forget to perform 'sudo apt update'")
+    os.system("sudo apt update")
+    os.system("clear")
+    print('Do not perform upgrade with the new repositories.')
     print('Thank you for using Pentizer. Happy hacking!\n')
 
 def menu():
@@ -36,8 +38,10 @@ def clean():
     os.system("sudo sed -i '/parrot parrot-security main contrib non-free/d' /etc/apt/sources.list")
     os.system("sudo sed -i '/backbox/d' /etc/apt/sources.list")
     os.system("sudo rm -f /etc/apt/trusted.gpg.d/kali-archive-key.asc")
-    os.system("sudo rm -f /etc/apt/trusted.gpg.d/parrotsec.gpg")
+    os.system("sudo rm -f /etc/apt/trusted.gpg.d/parrotseckey")
     os.system("sudo rm -f /etc/apt/sources.list.d/backbox.list")
+    os.system("sudo apt-key del 0A91 2CDE 87F9 9722 36AF  8B50 363A 96A5 CEA9 EA27")
+    os.system("sudo rm -f /etc/apt/trusted.gpg~")
 
 def main():
     choice = int(input('--> '))
@@ -57,6 +61,9 @@ def main():
             f.write('deb https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
             f.write('deb-src https://deb.parrotsec.org/parrot parrot main contrib non-free\n')
             f.write('deb-src https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
+            fullfilename = os.path.join('/etc/apt/trusted.gpg.d', 'parrotseckey')
+            urllib.request.urlretrieve('https://archive.parrotsec.org/parrot/misc/parrotsec.gpg', filename=fullfilename)
+            os.system('sudo apt-key add /etc/apt/trusted.gpg.d/parrotseckey')
     elif choice == 3:
         with open('/etc/apt/sources.list', 'a') as f:
             os.system('sudo add-apt-repository ppa:backbox/seven\n')
