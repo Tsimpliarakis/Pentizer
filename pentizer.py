@@ -62,7 +62,7 @@ def main():
             f.write('deb-src https://deb.parrotsec.org/parrot parrot main contrib non-free\n')
             f.write('deb-src https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
             fullfilename = os.path.join('/etc/apt/trusted.gpg.d', 'parrotseckey')
-            urllib.request.urlretrieve('https://archive.parrotsec.org/parrot/misc/parrotsec.gpg', filename=fullfilename)
+            urllib.request.urlretrieve('http://archive.parrotsec.org/parrot/misc/parrotsec.gpg', filename=fullfilename)
             os.system('sudo apt-key add /etc/apt/trusted.gpg.d/parrotseckey')
     elif choice == 3:
         with open('/etc/apt/sources.list', 'a') as f:
