@@ -34,14 +34,18 @@ REPOS = {
         "pref": """Package: *
 Pin: release n=kali-rolling
 Pin-Priority: 100
-"""
+""",
+        "key_url": "https://archive.kali.org/archive-key.asc",
+        "key_file": "/etc/apt/trusted.gpg.d/kali.gpg"
     },
     "parrot": {
         "repo": "deb http://deb.parrot.sh/parrot parrot main contrib non-free",
         "pref": """Package: *
 Pin: release n=parrot
 Pin-Priority: 100
-"""
+""",
+        "key_url": "https://deb.parrot.sh/parrot/mirrors/parrot.gpg",
+        "key_file": "/etc/apt/trusted.gpg.d/parrot.gpg"
     }
 }
 
@@ -62,8 +66,32 @@ def restore_sources():
     else:
         print(COLORS["RED"] + "No backup found." + COLORS["RESET"])
 
+def import_key(name):
+    """Download and install repo signing key"""
+    key_url = REPOS[name]["key_url"]
+    key_file = REPOS[name]["key_file"]
+
+    try:
+        wget = subprocess.run(
+            ["wget", "-qO", "-", key_url],
+            check=True,
+            stdout=subprocess.PIPE
+        )
+        with open(key_file, "wb") as out:
+            subprocess.run(
+                ["gpg", "--dearmor"],
+                input=wget.stdout,
+                check=True,
+                stdout=out
+            )
+        print(COLORS["GREEN"] + f"{name} signing key installed at {key_file}" + COLORS["RESET"])
+    except subprocess.CalledProcessError:
+        print(COLORS["RED"] + f"Failed to download {name} key." + COLORS["RESET"])
+    except Exception as e:
+        print(COLORS["RED"] + f"Error importing {name} key: {e}" + COLORS["RESET"])
+
 def add_repo(name):
-    """Add repo and preferences"""
+    """Add repo, preferences, and signing key"""
     repo_file = APT_DIR / f"{name}.list"
     pref_file = PREF_DIR / f"{name}.pref"
 
@@ -80,19 +108,23 @@ def add_repo(name):
         f.write(REPOS[name]["repo"] + "\n")
     print(COLORS["GREEN"] + f"{name} repo added at {repo_file}" + COLORS["RESET"])
 
-    # Write preferences file (pinning)
+    # Write preferences file
     with open(pref_file, "w") as f:
         f.write(REPOS[name]["pref"])
     print(COLORS["GREEN"] + f"{name} pinning rules added at {pref_file}" + COLORS["RESET"])
+
+    # Import GPG key
+    import_key(name)
 
     run_update()
     print(COLORS["CYAN"] + f"To install packages from {name}, use:" + COLORS["RESET"])
     print(COLORS["CYAN"] + f"  sudo apt install -t {name} <package>\n" + COLORS["RESET"])
 
 def remove_repo(name):
-    """Remove repo and preferences"""
+    """Remove repo, preferences, and signing key"""
     repo_file = APT_DIR / f"{name}.list"
     pref_file = PREF_DIR / f"{name}.pref"
+    key_file = Path(REPOS[name]["key_file"])
 
     if repo_file.exists():
         repo_file.unlink()
@@ -100,6 +132,9 @@ def remove_repo(name):
     if pref_file.exists():
         pref_file.unlink()
         print(COLORS["GREEN"] + f"{name} pinning rules removed." + COLORS["RESET"])
+    if key_file.exists():
+        key_file.unlink()
+        print(COLORS["GREEN"] + f"{name} signing key removed." + COLORS["RESET"])
 
     run_update()
 
@@ -112,7 +147,7 @@ def run_update():
         print(COLORS["RED"] + "apt-get update failed. Check your internet or repo config." + COLORS["RESET"])
 
 def menu():
-    print(COLORS["BOLD"] + "\n=== Pentizer v3 ===" + COLORS["RESET"])
+    print(COLORS["BOLD"] + "\n=== Pentizer ===" + COLORS["RESET"])
     print("1. Backup sources.list")
     print("2. Restore sources.list from backup")
     print("3. Add Kali repo (with pinning)")
