@@ -1,75 +1,153 @@
-## -- Michail Tsimpliarakis -- ##
-
+#!/usr/bin/env python3
 import os
-import urllib.request
+import sys
+import platform
+import shutil
+import subprocess
+from pathlib import Path
 
-def welcome():
-    print('\n - - - Converting any Debian based distro into a hacking powerhouse - - - \n')
+# Detect if colors should be enabled
+USE_COLOR = sys.stdout.isatty()
 
-def goodbye():
-    os.system("sudo apt-get update")
-    os.system("clear")
-    print('Do not perform upgrade with the new repositories.')
-    print('Thank you for using Pentizer. Happy hacking!\n')
+def c(code):
+    return code if USE_COLOR else ""
+
+# ANSI escape codes for colors
+COLORS = {
+    "GREEN": c("\033[92m"),
+    "YELLOW": c("\033[93m"),
+    "RED": c("\033[91m"),
+    "CYAN": c("\033[96m"),
+    "RESET": c("\033[0m"),
+    "BOLD": c("\033[1m")
+}
+
+# Paths
+APT_DIR = Path("/etc/apt/sources.list.d")
+PREF_DIR = Path("/etc/apt/preferences.d")
+BACKUP_FILE = Path("/etc/apt/sources.list.bak")
+
+# Repo definitions
+REPOS = {
+    "kali": {
+        "repo": "deb http://http.kali.org/kali kali-rolling main non-free contrib",
+        "pref": """Package: *
+Pin: release n=kali-rolling
+Pin-Priority: 100
+"""
+    },
+    "parrot": {
+        "repo": "deb http://deb.parrot.sh/parrot parrot main contrib non-free",
+        "pref": """Package: *
+Pin: release n=parrot
+Pin-Priority: 100
+"""
+    }
+}
+
+def backup_sources():
+    """Backup original sources.list"""
+    sources = Path("/etc/apt/sources.list")
+    if sources.exists() and not BACKUP_FILE.exists():
+        shutil.copy2(sources, BACKUP_FILE)
+        print(COLORS["GREEN"] + f"Backup created: {BACKUP_FILE}" + COLORS["RESET"])
+    else:
+        print(COLORS["YELLOW"] + "Backup already exists or sources.list not found." + COLORS["RESET"])
+
+def restore_sources():
+    """Restore sources.list from backup"""
+    if BACKUP_FILE.exists():
+        shutil.copy2(BACKUP_FILE, "/etc/apt/sources.list")
+        print(COLORS["GREEN"] + "sources.list restored from backup." + COLORS["RESET"])
+    else:
+        print(COLORS["RED"] + "No backup found." + COLORS["RESET"])
+
+def add_repo(name):
+    """Add repo and preferences"""
+    repo_file = APT_DIR / f"{name}.list"
+    pref_file = PREF_DIR / f"{name}.pref"
+
+    if repo_file.exists():
+        print(COLORS["YELLOW"] + f"{name} repo already exists." + COLORS["RESET"])
+        return
+
+    if not APT_DIR.exists() or not PREF_DIR.exists():
+        print(COLORS["RED"] + "APT directories missing. Are you sure this is a Debian-based system?" + COLORS["RESET"])
+        return
+
+    # Write repo file
+    with open(repo_file, "w") as f:
+        f.write(REPOS[name]["repo"] + "\n")
+    print(COLORS["GREEN"] + f"{name} repo added at {repo_file}" + COLORS["RESET"])
+
+    # Write preferences file (pinning)
+    with open(pref_file, "w") as f:
+        f.write(REPOS[name]["pref"])
+    print(COLORS["GREEN"] + f"{name} pinning rules added at {pref_file}" + COLORS["RESET"])
+
+    run_update()
+    print(COLORS["CYAN"] + f"To install packages from {name}, use:" + COLORS["RESET"])
+    print(COLORS["CYAN"] + f"  sudo apt install -t {name} <package>\n" + COLORS["RESET"])
+
+def remove_repo(name):
+    """Remove repo and preferences"""
+    repo_file = APT_DIR / f"{name}.list"
+    pref_file = PREF_DIR / f"{name}.pref"
+
+    if repo_file.exists():
+        repo_file.unlink()
+        print(COLORS["GREEN"] + f"{name} repo removed." + COLORS["RESET"])
+    if pref_file.exists():
+        pref_file.unlink()
+        print(COLORS["GREEN"] + f"{name} pinning rules removed." + COLORS["RESET"])
+
+    run_update()
+
+def run_update():
+    """Run apt-get update"""
+    try:
+        subprocess.run(["apt-get", "update"], check=True)
+        print(COLORS["GREEN"] + "apt-get update successful." + COLORS["RESET"])
+    except subprocess.CalledProcessError:
+        print(COLORS["RED"] + "apt-get update failed. Check your internet or repo config." + COLORS["RESET"])
 
 def menu():
-    print('==================================')
-    print('|                                |')
-    print('| 0. Clean repositories and Exit |')
-    print('| 1. Add Kali Linux repositories |')
-    print('| 2. Add Parrot Os repositories  |')
-    print('|                                |')
-    print('==================================\n')
+    print(COLORS["BOLD"] + "\n=== Pentizer v3 ===" + COLORS["RESET"])
+    print("1. Backup sources.list")
+    print("2. Restore sources.list from backup")
+    print("3. Add Kali repo (with pinning)")
+    print("4. Remove Kali repo")
+    print("5. Add Parrot repo (with pinning)")
+    print("6. Remove Parrot repo")
+    print("7. Exit")
 
-def detect():
-    kali = 'deb http://http.kali.org/kali kali-rolling main non-free contrib'
-    parrot = 'deb https://deb.parrotsec.org/parrot parrot main contrib non-free'
-    if kali in open('/etc/apt/sources.list').read():
-        print ('Kali repositories are already on your system')
-    if parrot in open('/etc/apt/sources.list').read():
-        print ('Parrot repositories are already on your system')
+    choice = input("Select an option: ").strip()
 
-def clean():
-    os.system("sudo sed -i '/kali kali-rolling main non-free contrib/d' /etc/apt/sources.list")
-    os.system("sudo sed -i '/parrot parrot main contrib non-free/d' /etc/apt/sources.list")
-    os.system("sudo sed -i '/parrot parrot-security main contrib non-free/d' /etc/apt/sources.list")
-    os.system("sudo rm -f /etc/apt/trusted.gpg.d/kali-archive-key.asc")
-    os.system("sudo rm -f /etc/apt/trusted.gpg.d/parrotseckey")
-    # os.system("sudo apt-key del 0A91 2CDE 87F9 9722 36AF  8B50 363A 96A5 CEA9 EA27")          -- See line 61 --
-    os.system("sudo rm -f /etc/apt/trusted.gpg~")
-
-def main():
-    choice = int(input('--> '))
-    if choice == 0:
-        goodbye()
-        clean()
-        exit()
-    elif choice == 1:
-        with open('/etc/apt/sources.list', 'a') as f:
-            f.write('deb http://http.kali.org/kali kali-rolling main non-free contrib\n')
-            f.write('deb-src http://http.kali.org/kali kali-rolling main non-free contrib\n')
-            fullfilename = os.path.join('/etc/apt/trusted.gpg.d', 'kali-archive-key.asc')
-            urllib.request.urlretrieve('https://archive.kali.org/archive-key.asc', filename=fullfilename)
-    elif choice == 2:
-        with open('/etc/apt/sources.list', 'a') as f:
-            f.write('deb https://deb.parrotsec.org/parrot parrot main contrib non-free\n')
-            f.write('deb https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
-            f.write('deb-src https://deb.parrotsec.org/parrot parrot main contrib non-free\n')
-            f.write('deb-src https://deb.parrotsec.org/parrot parrot-security main contrib non-free\n')
-            fullfilename = os.path.join('/etc/apt/trusted.gpg.d', 'parrotseckey')
-            urllib.request.urlretrieve('http://archive.parrotsec.org/parrot/misc/parrotsec.gpg', filename=fullfilename)
-            # os.system('sudo apt-key add /etc/apt/trusted.gpg.d/parrotseckey')                                                        -- Might need that later --
+    if choice == "1":
+        backup_sources()
+    elif choice == "2":
+        restore_sources()
+    elif choice == "3":
+        add_repo("kali")
+    elif choice == "4":
+        remove_repo("kali")
+    elif choice == "5":
+        add_repo("parrot")
+    elif choice == "6":
+        remove_repo("parrot")
+    elif choice == "7":
+        exit(0)
     else:
-        print('\nInvalid option\nExiting...\n')
-        clean()
-        exit()
-    goodbye()
+        print(COLORS["RED"] + "Invalid choice." + COLORS["RESET"])
 
 if __name__ == "__main__":
+    if platform.system() != "Linux" or not Path("/etc/debian_version").exists():
+        print(COLORS["RED"] + "Run this script in a Debian-based Linux environment." + COLORS["RESET"])
+        exit(1)
+
     if os.geteuid() != 0:
-        print("You need to run this tool with sudo privileges!")
-        exit()
-    welcome()
-    menu()
-    detect()
-    main()
+        print(COLORS["RED"] + "Run this script with sudo/root privileges." + COLORS["RESET"])
+        exit(1)
+
+    while True:
+        menu()
