@@ -25,7 +25,8 @@ COLORS = {
 # Paths
 APT_DIR = Path("/etc/apt/sources.list.d")
 PREF_DIR = Path("/etc/apt/preferences.d")
-BACKUP_FILE = Path("/etc/apt/sources.list.bak")
+BACKUP_DIR = Path("/etc/apt/backup")
+BACKUP_TAR = BACKUP_DIR / "apt_sources_backup.tar.gz"
 
 # Repo definitions
 REPOS = {
@@ -50,21 +51,36 @@ Pin-Priority: 100
 }
 
 def backup_sources():
-    """Backup original sources.list"""
-    sources = Path("/etc/apt/sources.list")
-    if sources.exists() and not BACKUP_FILE.exists():
-        shutil.copy2(sources, BACKUP_FILE)
-        print(COLORS["GREEN"] + f"Backup created: {BACKUP_FILE}" + COLORS["RESET"])
-    else:
-        print(COLORS["YELLOW"] + "Backup already exists or sources.list not found." + COLORS["RESET"])
+    """Backup /etc/apt/sources.list and sources.list.d/ into a tar.gz"""
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    if BACKUP_TAR.exists():
+        print(COLORS["YELLOW"] + f"Backup already exists: {BACKUP_TAR}" + COLORS["RESET"])
+        return
+
+    try:
+        subprocess.run(
+            ["tar", "czf", str(BACKUP_TAR), "/etc/apt/sources.list", "/etc/apt/sources.list.d/"],
+            check=True
+        )
+        print(COLORS["GREEN"] + f"Backup created: {BACKUP_TAR}" + COLORS["RESET"])
+    except subprocess.CalledProcessError:
+        print(COLORS["RED"] + "Backup failed." + COLORS["RESET"])
 
 def restore_sources():
-    """Restore sources.list from backup"""
-    if BACKUP_FILE.exists():
-        shutil.copy2(BACKUP_FILE, "/etc/apt/sources.list")
-        print(COLORS["GREEN"] + "sources.list restored from backup." + COLORS["RESET"])
-    else:
+    """Restore /etc/apt/sources.list and sources.list.d/ from backup tar.gz"""
+    if not BACKUP_TAR.exists():
         print(COLORS["RED"] + "No backup found." + COLORS["RESET"])
+        return
+
+    try:
+        subprocess.run(
+            ["tar", "xzf", str(BACKUP_TAR), "-C", "/"],
+            check=True
+        )
+        print(COLORS["GREEN"] + "APT sources restored from backup." + COLORS["RESET"])
+        run_update()
+    except subprocess.CalledProcessError:
+        print(COLORS["RED"] + "Restore failed." + COLORS["RESET"])
 
 def import_key(name):
     """Download and install repo signing key"""
@@ -148,8 +164,8 @@ def run_update():
 
 def menu():
     print(COLORS["BOLD"] + "\n=== Pentizer ===" + COLORS["RESET"])
-    print("1. Backup sources.list")
-    print("2. Restore sources.list from backup")
+    print("1. Backup APT sources")
+    print("2. Restore APT sources from backup")
     print("3. Add Kali repo (with pinning)")
     print("4. Remove Kali repo")
     print("5. Add Parrot repo (with pinning)")
@@ -174,6 +190,7 @@ def menu():
         exit(0)
     else:
         print(COLORS["RED"] + "Invalid choice." + COLORS["RESET"])
+
 
 if __name__ == "__main__":
     if platform.system() != "Linux" or not Path("/etc/debian_version").exists():
