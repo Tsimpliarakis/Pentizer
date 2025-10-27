@@ -134,7 +134,9 @@ def add_repo(name):
 
     run_update()
     print(COLORS["CYAN"] + f"To install packages from {name}, use:" + COLORS["RESET"])
-    print(COLORS["CYAN"] + f"  sudo apt install -t {name} <package>\n" + COLORS["RESET"])
+    suite = REPOS[name]["repo"].split()[2]  # grabs 'kali-rolling' or 'parrot'
+    print(COLORS["CYAN"] + f"  sudo apt install -t {suite} <package>\n" + COLORS["RESET"])
+
 
 def remove_repo(name):
     """Remove repo, preferences, and signing key"""
