@@ -45,7 +45,7 @@ Pin-Priority: 100
 Pin: release n=parrot
 Pin-Priority: 100
 """,
-        "key_url": "https://deb.parrot.sh/parrot/mirrors/parrot.gpg",
+        "key_url": "https://deb.parrot.sh/mirrors/parrot/misc/canary/key/parrot-2024.gpg",
         "key_file": "/etc/apt/trusted.gpg.d/parrot.gpg"
     }
 }
@@ -132,11 +132,35 @@ def add_repo(name):
     # Import GPG key
     import_key(name)
 
+    # Run apt update to load new release info
     run_update()
-    print(COLORS["CYAN"] + f"To install packages from {name}, use:" + COLORS["RESET"])
-    suite = REPOS[name]["repo"].split()[2]  # grabs 'kali-rolling' or 'parrot'
-    print(COLORS["CYAN"] + f"  sudo apt install -t {suite} <package>\n" + COLORS["RESET"])
 
+    # Detect suite (codename) dynamically
+    suite = "unknown"
+    try:
+        result = subprocess.run(["apt-cache", "policy"], text=True, stdout=subprocess.PIPE)
+        for line in result.stdout.splitlines():
+            if (f"release o=Parrot" in line or f"release o=Kali" in line) and "n=" in line:
+                for part in line.strip().split(","):
+                    if part.strip().startswith("n="):
+                        suite = part.strip().split("=")[1]
+                        break
+                if suite != "unknown":
+                    break
+    except Exception as e:
+        print(COLORS["YELLOW"] + f"Could not detect suite name automatically: {e}" + COLORS["RESET"])
+
+    # Fallback for known repos if detection fails
+    if suite == "unknown":
+        if name == "kali":
+            suite = "kali-rolling"
+        elif name == "parrot":
+            suite = "lory"
+        else:
+            suite = "unknown"
+
+    print(COLORS["CYAN"] + f"To install packages from {name}, use:" + COLORS["RESET"])
+    print(COLORS["CYAN"] + f"  sudo apt install -t {suite} <package>\n" + COLORS["RESET"])
 
 def remove_repo(name):
     """Remove repo, preferences, and signing key"""
